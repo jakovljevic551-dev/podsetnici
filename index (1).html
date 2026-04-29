@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Podsetnici">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<title>Podsetnici</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a1a; max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; }
+
+  /* NAV */
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 0.5px solid rgba(0,0,0,0.12); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  .nav-btn { flex: 1; padding: 10px 4px 8px; background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #999; font-size: 11px; font-weight: 500; }
+  .nav-btn.active { color: #1a1a1a; }
+  .nav-btn svg { width: 22px; height: 22px; }
+
+  /* HEADER */
+  .header { background: #fff; padding: 16px 16px 12px; border-bottom: 0.5px solid rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 50; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .header p { font-size: 13px; color: #888; margin-top: 2px; }
+  .header-action { background: #1a1a1a; color: #fff; border: none; border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; }
+
+  /* PAGE */
+  .page { display: none; padding: 12px 14px; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: #fff; border: 0.5px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 14px; margin-bottom: 8px; }
+  .card.overdue { border-left: 3px solid #e04040; border-radius: 0 14px 14px 0; }
+  .card.done { opacity: 0.4; }
+
+  /* FORM */
+  .form-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.08); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+  .field-label { font-size: 12px; color: #888; font-weight: 500; margin-bottom: 5px; }
+  .field-group { margin-bottom: 12px; }
+  input[type=text], input[type=datetime-local], input[type=number], input[type=email], select, textarea {
+    width: 100%; font-family: inherit; font-size: 14px; padding: 11px 12px;
+    border: 0.5px solid rgba(0,0,0,0.14); border-radius: 10px;
+    background: #fafaf8; color: #1a1a1a; -webkit-appearance: none; appearance: none;
+  }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #1a1a1a; background: #fff; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  .btn-primary { width: 100%; padding: 13px; background: #1a1a1a; color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 4px; }
+  .btn-primary:active { opacity: 0.8; }
+  .btn-secondary { width: 100%; padding: 11px; background: #f0efeb; color: #1a1a1a; border: none; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 6px; }
+
+  /* REMINDER CARD */
+  .rc-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .rc-icon { width: 34px; height: 34px; border-radius: 50%; background: #f0efeb; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rc-body { flex: 1; min-width: 0; }
+  .rc-title { font-size: 14px; font-weight: 500; line-height: 1.35; }
+  .rc-time { font-size: 12px; color: #888; margin-top: 3px; }
+  .rc-note { font-size: 13px; color: #555; margin-top: 6px; padding-top: 6px; border-top: 0.5px solid rgba(0,0,0,0.07); line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+  .rc-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .badge { font-size: 11px; padding: 4px 9px; border-radius: 20px; font-weight: 500; flex-shrink: 0; }
+  .badge-blue { background: #e6f1fb; color: #185fa5; }
+  .badge-green { background: #eaf3de; color: #3b6d11; }
+  .badge-red { background: #fcebeb; color: #a32d2d; }
+  .badge-gray { background: #f0efeb; color: #666; }
+  .action-btn { font-size: 12px; padding: 4px 11px; background: #f0efeb; border: none; border-radius: 20px; cursor: pointer; color: #555; font-weight: 500; }
+  .action-btn:hover { background: #eaf3de; color: #3b6d11; }
+  .delete-btn { background: none; border: none; cursor: pointer; color: #ccc; padding: 4px; margin-left: auto; flex-shrink: 0; }
+  .delete-btn:hover { color: #e04040; }
+
+  /* NOTES */
+  .note-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 14px; margin-bottom: 8px; cursor: pointer; }
+  .note-card:active { background: #fafaf8; }
+  .note-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .note-preview { font-size: 13px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .note-date { font-size: 11px; color: #bbb; margin-top: 6px; }
+
+  /* NOTE EDITOR */
+  .note-editor { display: none; position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 100vh; background: #fff; z-index: 200; flex-direction: column; }
+  .note-editor.open { display: flex; }
+  .note-editor-header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.08); }
+  .note-editor-header button { background: none; border: none; font-size: 14px; font-weight: 500; cursor: pointer; color: #1a1a1a; padding: 6px 0; }
+  .note-editor-header .save-btn { margin-left: auto; background: #1a1a1a; color: #fff; padding: 7px 16px; border-radius: 20px; }
+  .note-title-input { width: 100%; font-family: inherit; font-size: 20px; font-weight: 600; padding: 16px; border: none; background: #fff; color: #1a1a1a; outline: none; }
+  .note-body-input { flex: 1; width: 100%; font-family: inherit; font-size: 15px; padding: 0 16px 16px; border: none; background: #fff; color: #1a1a1a; outline: none; resize: none; line-height: 1.6; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.45); z-index: 300; align-items: flex-end; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 20px 20px 0 0; padding: 20px 16px 32px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+  .modal-close { float: right; background: #f0efeb; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+
+  /* FILTER */
+  .filter-row { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 2px; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-btn { font-size: 12px; padding: 6px 14px; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 20px; background: #fff; cursor: pointer; color: #666; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+  .filter-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 48px 20px; color: #bbb; font-size: 14px; line-height: 1.7; }
+  .empty svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.3; }
+
+  /* NOTIF BANNER */
+  .banner { background: #eaf3de; border: 0.5px solid #c0dd97; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #3b6d11; margin-bottom: 10px; display: none; }
+
+  /* NOTIFY TOGGLE */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+  .toggle-label { font-size: 14px; color: #333; }
+  .toggle { position: relative; width: 44px; height: 26px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #ddd; border-radius: 26px; transition: 0.2s; }
+  .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+  input:checked + .toggle-slider { background: #1a1a1a; }
+  input:checked + .toggle-slider:before { transform: translateX(18px); }
+
+  select option { color: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header" id="main-header">
+  <div class="header-row">
+    <div>
+      <h1 id="page-title">Podsetnici</h1>
+      <p id="page-subtitle">0 aktivnih</p>
+    </div>
+    <button class="header-action" id="add-btn" onclick="openAddModal()">+ Dodaj</button>
+  </div>
+</div>
+
+<!-- PAGES -->
+<div id="page-reminders" class="page active">
+  <div id="notif-banner" class="banner">✓ Notifikacije su aktivne!</div>
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="setFilter('all', this)">Svi</button>
+    <button class="filter-btn" onclick="setFilter('active', this)">Aktivni</button>
+    <button class="filter-btn" onclick="setFilter('upcoming', this)">Uskoro</button>
+    <button class="filter-btn" onclick="setFilter('done', this)">Urađeni</button>
+  </div>
+  <div id="reminders-list"></div>
+</div>
+
+<div id="page-notes" class="page">
+  <div id="notes-list"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchPage('reminders', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    Podsetnici
+  </button>
+  <button class="nav-btn" onclick="switchPage('notes', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Beleške
+  </button>
+</nav>
+
+<!-- ADD REMINDER MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('add-modal')">✕</button>
+    <h2>Novi podsetnik</h2>
+    
+    <div class="field-group">
+      <div class="field-label">Šta treba uraditi?</div>
+      <input type="text" id="r-task" placeholder="npr. Pozvati Peđu, Doktor, Račun..." />
+    </div>
+    
+    <div class="field-group">
+      <div class="field-label">Beleška (opciono)</div>
+      <textarea id="r-note" placeholder="Dodajte detalje, napomene..."></textarea>
+    </div>
+    
+    <div class="row2" style="margin-bottom:12px;">
+      <div class="field-group" style="margin:0;">
+        <div class="field-label">Datum i vreme</div>
+        <input type="datetime-local" id="r-datetime" />
+      </div>
+      <div class="field-group" style="margin:0;">
+        <div class="field-label">Podsetiti pre</div>
+        <select id="r-notif-unit">
+          <option value="minutes">Minuta</option>
+          <option value="hours">Sati</option>
+          <option value="days" selected>Dana</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="field-group">
+      <div class="field-label">Koliko <span id="unit-label">dana</span> ranije da te podsetim?</div>
+      <input type="number" id="r-notif-amount" value="2" min="0" step="1" />
+    </div>
+
+    <button class="btn-primary" onclick="addReminder()">Dodaj podsetnik</button>
+  </div>
+</div>
+
+<!-- NOTE EDITOR -->
+<div class="note-editor" id="note-editor">
+  <div class="note-editor-header">
+    <button onclick="closeNoteEditor()">← Nazad</button>
+    <button class="save-btn" onclick="saveNote()">Sačuvaj</button>
+    <button onclick="deleteCurrentNote()" style="color:#e04040; margin-left:8px;">Obriši</button>
+  </div>
+  <input type="text" class="note-title-input" id="note-title-input" placeholder="Naslov..." />
+  <textarea class="note-body-input" id="note-body-input" placeholder="Počnite da pišete..."></textarea>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+let reminders = [];
+let notes = [];
+let currentFilter = 'all';
+let currentNoteId = null;
+
+function save() {
+  localStorage.setItem('podsetnici_v3', JSON.stringify(reminders));
+  localStorage.setItem('beleske_v1', JSON.stringify(notes));
+}
+
+function load() {
+  try { reminders = JSON.parse(localStorage.getItem('podsetnici_v3') || '[]'); } catch(e) { reminders = []; }
+  try { notes = JSON.parse(localStorage.getItem('beleske_v1') || '[]'); } catch(e) { notes = []; }
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function switchPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  
+  if(name === 'reminders') {
+    document.getElementById('page-title').textContent = 'Podsetnici';
+    document.getElementById('add-btn').textContent = '+ Dodaj';
+    document.getElementById('add-btn').onclick = openAddModal;
+    renderReminders();
+  } else {
+    document.getElementById('page-title').textContent = 'Beleške';
+    document.getElementById('add-btn').textContent = '+ Nova';
+    document.getElementById('add-btn').onclick = newNote;
+    renderNotes();
+  }
+  updateSubtitle(name);
+}
+
+function updateSubtitle(page) {
+  if(page === 'reminders') {
+    const n = reminders.filter(r => !r.done).length;
+    document.getElementById('page-subtitle').textContent = n + ' aktivnih';
+  } else {
+    document.getElementById('page-subtitle').textContent = notes.length + ' beleški';
+  }
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function openAddModal() {
+  const def = new Date(Date.now() + 86400000 * 7);
+  def.setMinutes(0, 0, 0);
+  document.getElementById('r-datetime').value = def.toISOString().slice(0,16);
+  document.getElementById('r-task').value = '';
+  document.getElementById('r-note').value = '';
+  document.getElementById('r-notif-amount').value = '2';
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(() => document.getElementById('r-task').focus(), 100);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.getElementById('r-notif-unit').addEventListener('change', function() {
+  const labels = {minutes:'minuta', hours:'sata/i', days:'dana'};
+  document.getElementById('unit-label').textContent = labels[this.value];
+  const defaults = {minutes:'30', hours:'2', days:'2'};
+  document.getElementById('r-notif-amount').value = defaults[this.value];
+});
+
+// Close modal on overlay click
+document.getElementById('add-modal').addEventListener('click', function(e) {
+  if(e.target === this) closeModal('add-modal');
+});
+
+// ── REMINDERS ─────────────────────────────────────────────────
+function addReminder() {
+  const task = document.getElementById('r-task').value.trim();
+  const datetime = document.getElementById('r-datetime').value;
+  const unit = document.getElementById('r-notif-unit').value;
+  const amount = parseFloat(document.getElementById('r-notif-amount').value) || 0;
+  const note = document.getElementById('r-note').value.trim();
+  
+  if(!task) { alert('Unesite šta treba uraditi.'); return; }
+  if(!datetime) { alert('Izaberite datum i vreme.'); return; }
+  
+  const dt = new Date(datetime);
+  let notifMs = 0;
+  if(unit === 'minutes') notifMs = amount * 60000;
+  else if(unit === 'hours') notifMs = amount * 3600000;
+  else notifMs = amount * 86400000;
+  
+  const notifDt = new Date(dt.getTime() - notifMs);
+  const id = Date.now();
+  
+  reminders.push({ id, task, note, datetime: dt.toISOString(), notifDatetime: notifDt.toISOString(), notifAmount: amount, notifUnit: unit, done: false });
+  save();
+  closeModal('add-modal');
+  scheduleNotif(task, notifDt, dt);
+  renderReminders();
+  updateSubtitle('reminders');
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderReminders();
+}
+
+function renderReminders() {
+  const el = document.getElementById('reminders-list');
+  const now = new Date();
+  const soon = new Date(now.getTime() + 7 * 86400000);
+  
+  let list = [...reminders];
+  if(currentFilter === 'active') list = list.filter(r => !r.done);
+  else if(currentFilter === 'upcoming') list = list.filter(r => !r.done && new Date(r.datetime) <= soon);
+  else if(currentFilter === 'done') list = list.filter(r => r.done);
+  
+  list.sort((a,b) => new Date(a.datetime) - new Date(b.datetime));
+  
+  if(!list.length) {
+    el.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><br>Nema podsetnika.<br>Pritisnite + Dodaj.</div>`;
+    return;
+  }
+  
+  const fmt = d => new Date(d).toLocaleString('sr-RS', {weekday:'short', day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+  const fmtNotif = r => {
+    const labels = {minutes:'min', hours:'h', days:'dan/a'};
+    return r.notifAmount + ' ' + (r.notifUnit === 'days' && r.notifAmount === 1 ? 'dan' : r.notifUnit === 'days' ? 'dana' : r.notifUnit === 'hours' ? 'sata' : 'min') + ' ranije';
+  };
+  
+  el.innerHTML = list.map(r => {
+    const dt = new Date(r.datetime);
+    const overdue = !r.done && dt < now;
+    return `<div class="card${r.done?' done':''}${overdue?' overdue':''}">
+      <div class="rc-top">
+        <div class="rc-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <div class="rc-body">
+          <div class="rc-title">${r.task}</div>
+          <div class="rc-time">${fmt(r.datetime)}</div>
+          ${r.note ? `<div class="rc-note">${r.note}</div>` : ''}
+        </div>
+        <button class="delete-btn" onclick="deleteReminder(${r.id})">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="rc-actions">
+        <span class="badge badge-blue">🔔 ${fmtNotif(r)}</span>
+        ${overdue ? '<span class="badge badge-red">Prošlo</span>' : ''}
+        ${r.done ? '<span class="badge badge-green">✓ Urađeno</span>' : `<button class="action-btn" onclick="markDone(${r.id})">Urađeno ✓</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function markDone(id) { const r = reminders.find(x=>x.id===id); if(r) r.done=true; save(); renderReminders(); updateSubtitle('reminders'); }
+function deleteReminder(id) { if(!confirm('Obrisati podsetnik?')) return; reminders = reminders.filter(x=>x.id!==id); save(); renderReminders(); updateSubtitle('reminders'); }
+
+// ── NOTES ─────────────────────────────────────────────────────
+function renderNotes() {
+  const el = document.getElementById('notes-list');
+  if(!notes.length) {
+    el.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><br>Nema beleški.<br>Pritisnite + Nova.</div>`;
+    return;
+  }
+  const sorted = [...notes].sort((a,b) => b.updated - a.updated);
+  const fmt = ts => new Date(ts).toLocaleDateString('sr-RS', {day:'numeric', month:'short', year:'numeric'});
+  el.innerHTML = sorted.map(n => `
+    <div class="note-card" onclick="openNote(${n.id})">
+      <div class="note-title">${n.title || 'Bez naslova'}</div>
+      <div class="note-preview">${n.body || 'Prazna beleška'}</div>
+      <div class="note-date">${fmt(n.updated)}</div>
+    </div>
+  `).join('');
+  updateSubtitle('notes');
+}
+
+function newNote() {
+  currentNoteId = null;
+  document.getElementById('note-title-input').value = '';
+  document.getElementById('note-body-input').value = '';
+  document.getElementById('note-editor').classList.add('open');
+  setTimeout(() => document.getElementById('note-title-input').focus(), 100);
+}
+
+function openNote(id) {
+  const n = notes.find(x=>x.id===id);
+  if(!n) return;
+  currentNoteId = id;
+  document.getElementById('note-title-input').value = n.title || '';
+  document.getElementById('note-body-input').value = n.body || '';
+  document.getElementById('note-editor').classList.add('open');
+}
+
+function saveNote() {
+  const title = document.getElementById('note-title-input').value.trim();
+  const body = document.getElementById('note-body-input').value.trim();
+  if(!title && !body) { closeNoteEditor(); return; }
+  
+  if(currentNoteId) {
+    const n = notes.find(x=>x.id===currentNoteId);
+    if(n) { n.title = title; n.body = body; n.updated = Date.now(); }
+  } else {
+    notes.push({ id: Date.now(), title, body, created: Date.now(), updated: Date.now() });
+  }
+  save();
+  closeNoteEditor();
+  renderNotes();
+}
+
+function deleteCurrentNote() {
+  if(!currentNoteId) { closeNoteEditor(); return; }
+  if(!confirm('Obrisati belešku?')) return;
+  notes = notes.filter(x=>x.id!==currentNoteId);
+  save();
+  closeNoteEditor();
+  renderNotes();
+}
+
+function closeNoteEditor() {
+  document.getElementById('note-editor').classList.remove('open');
+  currentNoteId = null;
+}
+
+// ── NOTIFICATIONS ──────────────────────────────────────────────
+async function requestNotif() {
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'granted') {
+    document.getElementById('notif-banner').style.display = 'block';
+    return;
+  }
+  if(Notification.permission !== 'denied') {
+    const p = await Notification.requestPermission();
+    if(p === 'granted') document.getElementById('notif-banner').style.display = 'block';
+  }
+}
+
+function scheduleNotif(task, notifDt, taskDt) {
+  const ms = notifDt.getTime() - Date.now();
+  if(ms > 0 && ms < 14 * 86400000) {
+    setTimeout(() => {
+      if(Notification.permission === 'granted') {
+        new Notification('⏰ ' + task, {
+          body: 'Zakazano za ' + taskDt.toLocaleString('sr-RS', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}),
+          tag: 'r_' + Date.now()
+        });
+      }
+    }, ms);
+  }
+}
+
+// Re-schedule all pending notifications on load
+function rescheduleAll() {
+  const now = Date.now();
+  reminders.filter(r => !r.done).forEach(r => {
+    const notifMs = new Date(r.notifDatetime).getTime();
+    const taskMs = new Date(r.datetime).getTime();
+    if(notifMs > now) scheduleNotif(r.task, new Date(r.notifDatetime), new Date(r.datetime));
+  });
+}
+
+// ── SERVICE WORKER ────────────────────────────────────────────
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(e => console.log('SW error:', e));
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+load();
+requestNotif();
+rescheduleAll();
+renderReminders();
+updateSubtitle('reminders');
+
+// Default datetime
+const def = new Date(Date.now() + 86400000 * 7);
+def.setMinutes(0,0,0);
+document.getElementById('r-datetime').value = def.toISOString().slice(0,16);
+</script>
+</body>
+</html>
